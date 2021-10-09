@@ -156,6 +156,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dbgcode.c" />
+    <ClCompile Include="ikcp.c" />
+    <ClCompile Include="ikcp_util.c" />
     <ClCompile Include="names.c" />
     <ClCompile Include="usbip_common.c" />
     <ClCompile Include="getopt.c" />
@@ -172,6 +174,8 @@
   <ItemGroup>
     <ClInclude Include="..\config.h" />
     <ClInclude Include="dbgcode.h" />
+    <ClInclude Include="ikcp.h" />
+    <ClInclude Include="ikcp_util.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="mssign32.h" />
     <ClInclude Include="names.h" />

@@ -155,6 +155,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\lib\ikcp.c" />
+    <ClCompile Include="..\..\lib\ikcp_util.c" />
     <ClCompile Include="usbip.c" />
     <ClCompile Include="usbip_attach.c" />
     <ClCompile Include="usbip_bind.c" />
@@ -170,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\config.h" />
+    <ClInclude Include="..\..\lib\ikcp_util.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="usbip.h" />
     <ClInclude Include="usbip_dscr.h" />

@@ -5,6 +5,8 @@
 #include "vhci_pnp.h"
 #include "vhci_dev.h"
 #include "usbip_vhci_api.h"
+#include "usbip_proto.h"
+#include "usb_util.h"
 
 extern BOOLEAN vhub_is_empty_port(pvhub_dev_t vhub, ULONG port);
 extern void vhub_attach_vpdo(pvhub_dev_t vhub, pvpdo_dev_t vpdo);

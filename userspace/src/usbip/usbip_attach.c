@@ -196,7 +196,8 @@ attach_device(const char *host, const char *busid, const char *serial)
 	int	rhport;
 	HANDLE	hdev = INVALID_HANDLE_VALUE;
 
-	sockfd = usbip_net_tcp_connect(host, usbip_port_string);
+	sockfd = usbip_net_kcp_connect(host, usbip_port_string);
+	//sockfd = usbip_net_tcp_connect(host, usbip_port_string);
 	if (sockfd == INVALID_SOCKET) {
 		err("failed to connect a remote host: %s", host);
 		return 2;

@@ -118,7 +118,7 @@ list_exported_devices(const char *host)
 {
 	int rc;
 	SOCKET sockfd;
-
+	//// FIXME:
 	sockfd = usbip_net_tcp_connect(host, usbip_port_string);
 	if (sockfd == INVALID_SOCKET) {
 		err("failed to connect a remote host: %s", host);
