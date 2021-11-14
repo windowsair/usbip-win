@@ -5,6 +5,10 @@
 
 #include <ws2tcpip.h>
 #include <mstcpip.h>
+#include <Windows.h>
+#pragma warning(disable: 4005)
+#include <ntstatus.h>
+#pragma warning(default: 4005)
 
 #include "usbip_common.h"
 #include "usbip_network.h"
@@ -24,6 +28,56 @@ static struct sockaddr_in g_server_addr;
 static ikcpcb *g_kcp = NULL;
 static char g_usbip_buffer[MTU_SIZE];
 static char g_kcp_buffer[MTU_SIZE];
+
+typedef NTSTATUS(NTAPI* pSetTimerResolution)(ULONG RequestedResolution, BOOLEAN Set, PULONG ActualResolution);
+typedef NTSTATUS(NTAPI* pQueryTimerResolution)(PULONG MinimumResolution, PULONG MaximumResolution, PULONG CurrentResolution);
+
+int set_timer() {
+	NTSTATUS status;
+	pSetTimerResolution setFunction;
+	pQueryTimerResolution queryFunction;
+	ULONG minResolution, maxResolution, actualResolution;
+	const HINSTANCE hLibrary = LoadLibrary("NTDLL.dll");
+	if (hLibrary == NULL)
+	{
+		printf("Failed to load NTDLL.dll (%d)\n", GetLastError());
+		return 1;
+	}
+
+	queryFunction = (pQueryTimerResolution)GetProcAddress(hLibrary, "NtQueryTimerResolution");
+	if (queryFunction == NULL)
+	{
+		printf("NtQueryTimerResolution is null (%d)\n", GetLastError());
+		return 1;
+	}
+
+	queryFunction(&minResolution, &maxResolution, &actualResolution);
+	printf("Win32 Timer Resolution:\n\tMinimum Value:\t%u\n\tMaximum Value:\t%u\n\tActual Value:\t%u\n\n", minResolution, maxResolution, actualResolution);
+
+	setFunction = (pSetTimerResolution)GetProcAddress(hLibrary, "NtSetTimerResolution");
+	if (setFunction == NULL)
+	{
+		printf("NtSetTimerResolution is null (%d)\n", GetLastError());
+		return 1;
+	}
+
+	printf("Setting Timer Resolution to the maximum value (%d)...\n", maxResolution);
+	status = setFunction(maxResolution, TRUE, &actualResolution);
+	if (status == STATUS_SUCCESS)
+	{
+		printf("Success! (Current resolution: %d)\n", actualResolution);
+		return 0;
+	}
+
+	if (status == STATUS_TIMER_RESOLUTION_NOT_SET)
+	{
+		printf("Timer not set (Return Code: %d)\n", status);
+		return 2;
+	}
+
+	printf("Failed, Return Value: %d (Error Code: %d)\n", status, GetLastError());
+	return 1;
+}
 
 void usbip_setup_port_number(char* arg)
 {
@@ -477,6 +531,7 @@ ReaderCallBack(DWORD errcode, DWORD nread, LPOVERLAPPED lpOverlapped) {
 	}
 	else {
 		ikcp_send(g_kcp, g_usbip_buffer, nread);
+		ikcp_flush(g_kcp);
 	}
 }
 
@@ -496,6 +551,8 @@ ProxyThread(LPVOID lpThreadParameter) {
 	OVERLAPPED ov_writer;
 	memset(&ov_reader, 0, sizeof(OVERLAPPED));
 	memset(&ov_writer, 0, sizeof(OVERLAPPED));
+
+	set_timer();
 
 	while (1) {
 		SleepEx(1, TRUE);
@@ -559,13 +616,14 @@ SOCKET usbip_net_kcp_connect(const char *hostname, const char *port) {
 	g_kcp = ikcp_create(1, (void *)1);
 	g_kcp->output = udp_output;
 
-	ikcp_wndsize(g_kcp, 128, 128);
+	ikcp_wndsize(g_kcp, 4096, 4096);
 
-	ikcp_nodelay(g_kcp, 2, 10, 2, 1); 	// set fast mode
-	g_kcp->rx_minrto = 10;
+	ikcp_nodelay(g_kcp, 2, 2, 2, 1); // set fast mode
+	g_kcp->interval = 0;
+	g_kcp->rx_minrto = 1;
 	g_kcp->fastresend = 1;
 
-	ikcp_setmtu(g_kcp, 1500);
+	ikcp_setmtu(g_kcp, 768);
 
 	/* get local socket pair */
 	if (socketpair(AF_INET, SOCK_STREAM, 0, g_local_socket) < 0) {
